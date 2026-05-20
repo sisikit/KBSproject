@@ -1,19 +1,25 @@
+# nlp_processor.py
 import re
 from camel_tools.utils.dediac import dediac_ar
 from camel_tools.tokenizers.word import simple_word_tokenize
 from camel_tools.disambig.mle import MLEDisambiguator
+# استيراد محرك القواعد من الملف الآخر
+from rules_engine import apply_irab_to_sentence
 
+print("Loading CAMeL Tools model...")
 mle = MLEDisambiguator.pretrained('calima-msa-r13')
+
 
 def clean_text(raw_input):
     text = re.sub(r'\s+', ' ', raw_input).strip()
     return dediac_ar(text)
 
+
 def process_sentence_for_i3rab(raw_sentence):
     cleaned = clean_text(raw_sentence)
     tokens = simple_word_tokenize(cleaned)
     disambiguated = mle.disambiguate(tokens)
-    
+
     final_features = []
     for word_obj in disambiguated:
         best = word_obj.analyses[0].analysis
@@ -109,4 +115,6 @@ def process_sentence_for_i3rab(raw_sentence):
             'vox': best.get('vox', 'na'),
 
         })
-    return final_features
+
+    # إرسال الميزات المستخرجة إلى محرك القواعد لتوليد نصوص الإعراب النهائية
+    return apply_irab_to_sentence(final_features)
